@@ -6,6 +6,10 @@ import remarkGfm from 'remark-gfm';
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "standalone",
+  // This helps Next.js 15 handle Tailwind 4 without PostCSS configs
+  experimental: {
+    optimizePackageImports: ['lucide-react'], 
+  },
   images: {
     remotePatterns: [
       {
@@ -15,7 +19,6 @@ const nextConfig = {
       }
     ]
   },
-  // Include mdx in page extensions
   pageExtensions: ['js', 'jsx', 'ts', 'tsx', 'mdx']
 };
 
@@ -26,9 +29,7 @@ const withMDX = createMDX({
       remarkFrontmatter,
       [remarkMdxFrontmatter, { name: "frontmatter" }],
     ],
-    // rehypePlugins: [rehypeSlug],
   }
 })
 
-// Merge MDX config with Next.js config
 export default withMDX(nextConfig)

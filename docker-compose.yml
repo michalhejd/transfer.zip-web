@@ -1,38 +1,58 @@
 services:
   mongo:
     image: mongo:8.0-noble
-    # https://github.com/robinkarlberg/transfer.zip-web/issues/42#issue-3242349311
-    # Use an older mongodb version if your CPU does not support AVX instructions.
-    # image: mongo:4.4
     restart: unless-stopped
     volumes:
       - ./_db:/data/db
-    ports:
-      # I made mongodb listen on localhost here to enable MongoDB compass to inspect the database
-      - 127.0.0.1:${MONGODB_FORWARD_PORT:-27017}:27017
-    env_file:
-      - .env
+    environment:
+      # These must match the keys in your Coolify Env tab
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME:-root}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
+      - MONGO_INITDB_DATABASE=${MONGODB_DB_NAME:-transfer-zip}
 
   next:
     build: next
     restart: unless-stopped
-    env_file:
-      - .env
-      - next/.env
     ports:
-      - 127.0.0.1:${WEB_SERVER_FORWARD_PORT:-9001}:9001
-    
+      - "${WEB_SERVER_FORWARD_PORT:-9001}:9001"
+    environment:
+      # Base Config
+      - NODE_ENV=production
+      - SITE_URL=${SITE_URL}
+      - MONGODB_URL=${MONGODB_URL}
+      - COOKIE_DOMAIN=${COOKIE_DOMAIN}
+      # Public Envs (Next.js needs these at build/runtime)
+      - NEXT_PUBLIC_SITE_NAME=${NEXT_PUBLIC_SITE_NAME}
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+      - NEXT_PUBLIC_CONTACT_EMAIL=${NEXT_PUBLIC_CONTACT_EMAIL}
+      - NEXT_PUBLIC_SUPPORT_EMAIL=${NEXT_PUBLIC_SUPPORT_EMAIL}
+      - NEXT_PUBLIC_SELFHOST=${NEXT_PUBLIC_SELFHOST}
+      # Auth & Storage
+      - GOOGLE_OAUTH_CLIENT_ID=${GOOGLE_OAUTH_CLIENT_ID}
+      - GOOGLE_OAUTH_CLIENT_SECRET=${GOOGLE_OAUTH_CLIENT_SECRET}
+      - S3_ENDPOINT=${S3_ENDPOINT}
+      - S3_REGION=${S3_REGION}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME}
+      - S3_ACCESS_KEY_ID=${S3_ACCESS_KEY_ID}
+      - S3_SECRET_ACCESS_KEY=${S3_SECRET_ACCESS_KEY}
+      # Emails & Stripe
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - RESEND_DOMAIN=${RESEND_DOMAIN}
+      - STRIPE_SK=${STRIPE_SK}
+      - STRIPE_WHSEC=${STRIPE_WHSEC}
+
   signaling-server:
     build: signaling-server
     restart: unless-stopped
     ports:
-      - 127.0.0.1:${SIGNALING_SERVER_FORWARD_PORT:-9002}:9002
+      - "${SIGNALING_SERVER_FORWARD_PORT:-9002}:9002"
     
   worker:
     build: worker
     restart: unless-stopped
-    env_file:
-      - .env
+    environment:
+      - MONGODB_URL=${MONGODB_URL}
+      - NODE_ENV=production
     volumes:
       - worker_data:/worker_data
 
